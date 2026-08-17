@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Summarizer | Smart Text & Speech</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       ALL ORIGINAL STYLES — completely unchanged
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --primary-violet: #e11d48;
+      --secondary-purple: #4c0519;
+      --accent-cyan: #fda4af;
+      --bg-dark: #0a0101;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --border-glass: rgba(255, 255, 255, 0.08);
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+
+    body { background: var(--bg-dark); color:#ffffff; overflow-x:hidden; min-height: 100vh; }
+
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+    .page{ position:relative; z-index:1; }
+
+    .navbar{
+      width:92%; max-width:1240px; margin:24px auto 0;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 28px; border:1px solid var(--border-glass);
+      border-radius:24px; background: rgba(10, 1, 1, 0.7);
+      backdrop-filter:blur(20px); box-shadow:0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .logo{ font-size:26px; font-weight:800; letter-spacing: -0.5px; }
+    .logo span{
+      background: linear-gradient(to right, var(--accent-cyan), var(--primary-violet));
+      background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .nav-buttons{ display:flex; gap:12px; }
+    .nav-buttons a{ text-decoration:none; }
+    .nav-buttons button{
+      padding:10px 22px; border:none; border-radius:14px;
+      cursor:pointer; font-weight:700; transition:.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-login{ background:transparent; color:#ffffff; border:1px solid var(--border-glass) !important; }
+    .btn-login:hover { background: rgba(255,255,255,0.05); }
+    .btn-signup{
+      background:linear-gradient(135deg, var(--primary-violet), var(--secondary-purple));
+      color:#ffffff; box-shadow:0 8px 20px rgba(225, 29, 72, 0.3);
+    }
+    .btn-signup:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(225, 29, 72, 0.5); }
+
+    .hero{
+      width:92%; max-width:1240px; margin:40px auto;
+      display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center;
+    }
+    .hero-badge{
+      display:inline-block; padding:6px 16px; border-radius:999px;
+      background:rgba(225, 29, 72, 0.15); border:1px solid rgba(225, 29, 72, 0.3);
+      color:var(--accent-cyan); font-size:12px; font-weight:700;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom:20px;
+    }
+    .hero h1{
+      font-size:62px; line-height:1.1; font-weight:800; margin-bottom:24px;
+      background: linear-gradient(to bottom right, #fff, var(--accent-cyan));
+      background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p{ color:#c1a7a7; font-size:18px; line-height:1.7; margin-bottom:32px; }
+    .hero-buttons{ display:flex; gap:16px; margin-bottom:40px; }
+    .hero-buttons button{
+      padding:16px 32px; border-radius:16px; font-size:16px; font-weight:700;
+      cursor:pointer; transition:.3s;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg, var(--primary-violet), var(--secondary-purple));
+      color:#fff; border:none; box-shadow:0 10px 25px rgba(225, 29, 72, 0.4);
+    }
+    .btn-secondary{ background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border-glass); }
+
+    .hero-visual{ position:relative; height:450px; }
+    .image-large{
+      width:100%; height:100%; object-fit:cover; border-radius:32px;
+      border: 1px solid var(--border-glass);
+      mask-image: linear-gradient(to bottom, black 80%, transparent);
+    }
+    .floating-card {
+      position: absolute; background: rgba(40, 5, 5, 0.7); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass); padding: 15px; border-radius: 20px;
+      display: flex; align-items: center; gap: 12px;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+    .section-box{
+      width:92%; max-width:1240px; margin:60px auto; padding:60px 40px;
+      border-radius:32px; background: var(--card-bg);
+      border:1px solid var(--border-glass); backdrop-filter:blur(8px);
+    }
+    .section-title{ text-align:center; font-size:38px; font-weight:800; margin-bottom:12px; }
+    .feature-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:40px; }
+    .feature-card{
+      background:rgba(255, 255, 255, 0.02); padding:30px 20px; border-radius:24px;
+      border:1px solid var(--border-glass); transition: .3s; text-align: center;
+    }
+    .feature-card:hover{
+      background: rgba(225, 29, 72, 0.1); border-color: var(--primary-violet); transform: translateY(-8px);
+    }
+    .feature-card .icon{ font-size:40px; margin-bottom:20px; display:block; }
+
+    .step-number{
+      background: var(--primary-violet); width: 40px; height: 40px;
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; margin: 0 auto 15px;
+    }
+
+    .footer{ padding: 40px; opacity: 0.6; font-size: 13px; text-align: center; }
+
+    /* ── CHATBOT UI — original styles, completely unchanged ── */
+    #chatIcon{
+      position:fixed; bottom:30px; right:30px;
+      width:65px; height:65px; border-radius:50%;
+      background:linear-gradient(135deg, var(--primary-violet), var(--secondary-purple));
+      color:#fff; display:flex; align-items:center; justify-content:center;
+      font-size:30px; cursor:pointer; z-index:100;
+      box-shadow: 0 10px 30px rgba(225, 29, 72, 0.5);
+    }
+    #chatbox{
+      position:fixed; bottom:110px; right:30px;
+      width:350px; background:#fff; color:#111;
+      border-radius:24px; overflow:hidden; display:none;
+      box-shadow:0 20px 50px rgba(0,0,0,0.4); z-index:101;
+    }
+    #chatHeader{
+      background: var(--secondary-purple); color:#fff;
+      padding:18px; font-weight:700; display:flex; justify-content:space-between;
+    }
+    #chatBody { height: 300px; padding: 15px; overflow-y: auto; background: #fffafa; }
+    .msg { padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; font-size: 14px; }
+    .bot { background: #ffeef1; color: #9f1239; align-self: flex-start; }
+    .user { background: var(--primary-violet); color: #fff; margin-left: auto; width: fit-content; }
+    #chatFooter { padding: 15px; display: flex; gap: 8px; border-top: 1px solid #eee; }
+    #chatFooter input { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 12px; outline: none; }
+    #chatFooter button { background: var(--primary-violet); color: #fff; border: none; padding: 0 15px; border-radius: 12px; cursor: pointer; }
+
+    /* ── NEW: Typing animation bubble ──────────────────────── */
+    /* Shown while Gemini is generating a reply.               */
+    /* Same .msg.bot class so it matches existing bubble style */
+    .typing-bubble {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 12px 18px;
+    }
+    .typing-bubble span {
+      width: 7px;
+      height: 7px;
+      background: #e11d48;
+      border-radius: 50%;
+      display: inline-block;
+      animation: typing-bounce 1.2s infinite ease-in-out;
+    }
+    .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40%            { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Disabled state for the send button while waiting */
+    #chatFooter button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── NEW: Suggested-question buttons (predefined chatbot) ── */
+    /* Same bubble spacing rhythm as .msg, wine-red theme colors  */
+    #suggestions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .suggestion-btn {
+      background: #fff;
+      color: var(--primary-violet);
+      border: 1.5px solid var(--primary-violet);
+      border-radius: 16px;
+      padding: 7px 13px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .suggestion-btn:hover {
+      background: var(--primary-violet);
+      color: #fff;
+    }
+    .suggestion-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 1024px) {
+      .hero { grid-template-columns: 1fr; text-align: center; }
+      .hero-buttons { justify-content: center; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="page">
+    <!-- ── ORIGINAL navbar (unchanged) ── -->
+    <div class="navbar">
+      <div class="logo">AI <span> Summarize</span></div>
+      <div class="nav-buttons">
+        <a href="/login"><button class="btn-login">Login</button></a>
+        <a href="/signup"><button class="btn-signup">Sign Up</button></a>
+      </div>
+    </div>
+
+    <!-- ── ORIGINAL hero (unchanged) ── -->
+    <section class="hero">
+      <div>
+        <div class="hero-badge">Next-Gen Language Processing</div>
+        <h1>Summarize & Listen <br> with <span style="color:var(--primary-violet)">Intelligence.</span></h1>
+        <p>
+          Transform massive documents into digestible insights instantly. Our AI picks the most critical information and reads it back to you with natural-sounding speech.
+        </p>
+        <div class="hero-buttons">
+          <a href="/login"><button class="btn-primary">Get Started Free</button></a>
+          <a href="/signup"><button class="btn-secondary">Learn More</button></a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img class="image-large" src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80" alt="AI Neural Network">
+        <div class="floating-card" style="top: 20%; left: -10%;">
+          <span>✨</span> <strong>99% Accuracy</strong>
+        </div>
+        <div class="floating-card" style="bottom: 20%; right: -5%; animation-delay: 2s;">
+          <span>🔊</span> <strong>Natural Voice</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ORIGINAL features section (unchanged) ── -->
+    <section class="section-box">
+      <h2 class="section-title">Powerful Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="icon">⚡</span>
+          <h3>Instant Summary</h3>
+          <p>Condense 10 pages into 10 sentences in under 2 seconds.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🎙️</span>
+          <h3>Voice Clarity</h3>
+          <p>High-quality TTS engine with multiple language support.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🧠</span>
+          <h3>Context Aware</h3>
+          <p>The AI understands deep meaning, not just keywords.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">📱</span>
+          <h3>Responsive</h3>
+          <p>Access your summaries on any device, anywhere.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ORIGINAL workflow section (unchanged) ── -->
+    <section class="section-box">
+      <h2 class="section-title">The Workflow</h2>
+      <div class="feature-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="feature-card">
+          <div class="step-number">1</div>
+          <h3>Upload</h3>
+          <p>Paste text or upload documents.</p>
+        </div>
+        <div class="feature-card">
+          <div class="step-number">2</div>
+          <h3>Process</h3>
+          <p>AI analyzes key points.</p>
+        </div>
+        <div class="feature-card">
+          <div class="step-number">3</div>
+          <h3>Review</h3>
+          <p>Read the condensed version.</p>
+        </div>
+        <div class="feature-card">
+          <div class="step-number">4</div>
+          <h3>Listen</h3>
+          <p>Convert output to audio.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      © 2026 AI Summarizer Project | Designed for Efficiency & Accessibility
+    </div>
+  </div>
+
+  <!-- ── ORIGINAL chatbot HTML (unchanged — zero edits to markup) ── -->
+  <div id="chatIcon" onclick="openChat()">🤖</div>
+
+  <div id="chatbox">
+    <div id="chatHeader">
+      AI Summarizer Support
+      <span id="closeBtn" onclick="closeChat()" style="cursor:pointer">×</span>
+    </div>
+    <div id="chatBody">
+      <div class="msg bot">Hello! 👋 I'm your AI Summarizer Support Assistant.</div>
+      <div class="msg bot">How can I help you today?</div>
+    </div>
+    <div id="chatFooter">
+      <input type="text" id="msg" placeholder="Type a message..." />
+      <button id="sendBtn" onclick="chat()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────
+    //  BACKGROUND CANVAS  (unchanged)
+    // ─────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const particleCount = 40;
+
+    function init() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 80 + 20,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.01,
+          color: i % 2 === 0 ? "rgba(225, 29, 72, 0.1)" : "rgba(76, 5, 25, 0.15)"
+        });
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = "#0a0101";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.rotation += p.rotationSpeed;
+        if (p.x < -p.size) p.x = canvas.width + p.size;
+        if (p.x > canvas.width + p.size) p.x = -p.size;
+        if (p.y < -p.size) p.y = canvas.height + p.size;
+        if (p.y > canvas.height + p.size) p.y = -p.size;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+        ctx.strokeStyle = "rgba(225, 29, 72, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, -p.size);
+        ctx.lineTo(p.size, p.size);
+        ctx.lineTo(-p.size, p.size);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', init);
+    init();
+    draw();
+
+    // ─────────────────────────────────────────────────────────────
+    //  CHATBOT SHELL  (open/close — unchanged)
+    // ─────────────────────────────────────────────────────────────
+    const chatbox  = document.getElementById("chatbox");
+    const chatBody = document.getElementById("chatBody");
+    const msgInput = document.getElementById("msg");
+    const sendBtn  = document.getElementById("sendBtn");
+
+    function openChat()  { chatbox.style.display = "block"; }
+    function closeChat() { chatbox.style.display = "none";  }
+
+    // ─────────────────────────────────────────────────────────────
+    //  addMessage()  —  unchanged: creates a bubble in the chat
+    // ─────────────────────────────────────────────────────────────
+    function addMessage(text, type) {
+      const div = document.createElement("div");
+      div.className = "msg " + type;
+      div.innerText = text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      return div;   // return the element so we can remove it later (typing bubble)
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  NEW: showTyping() / hideTyping()
+    //  Inserts a three-dot animated bubble while Gemini thinks.
+    //  Uses the same .msg.bot class to match existing bubble style.
+    // ─────────────────────────────────────────────────────────────
+    let typingBubble = null;
+
+    function showTyping() {
+      typingBubble = document.createElement("div");
+      typingBubble.className = "msg bot";
+      typingBubble.innerHTML = `
+        <div class="typing-bubble">
+          <span></span><span></span><span></span>
+        </div>`;
+      chatBody.appendChild(typingBubble);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function hideTyping() {
+      if (typingBubble && typingBubble.parentNode) {
+        typingBubble.parentNode.removeChild(typingBubble);
+      }
+      typingBubble = null;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  NEW: chat()  — fetches from Flask POST /chat, which now
+    //  answers from a local predefined Q&A knowledge base
+    //  (chatbot_qa.py). No Gemini, no external AI API, no API key.
+    //
+    //  What's the same as before:
+    //    - User message bubble uses addMessage(text, "user")
+    //    - Bot reply bubble uses addMessage(reply, "bot")
+    //    - Send on Enter keypress still works
+    //    - Send button still works
+    //
+    //  What's new:
+    //    - Clickable suggested-question buttons are shown after
+    //      every bot reply so the conversation can keep going.
+    //    - chat() accepts an optional override string so a button
+    //      click can send its own label without touching the input.
+    // ─────────────────────────────────────────────────────────────
+
+    // URL of the Flask backend — change if deployed to a server
+    const BACKEND_URL = "";  // relative path — same-origin as whatever host served this page
+
+    // Must mirror SUGGESTED_QUESTIONS in chatbot_qa.py
+    const SUGGESTED_QUESTIONS = [
+      "👋 Hello",
+      "What can you do?",
+      "I want to summarize my text",
+      "I want to summarize a PDF",
+      "How does this website work?",
+      "What is BART?",
+      "What is text-to-speech?",
+      "What are quizzes?",
+      "What are flashcards?",
+      "Is my data stored?",
+      "What technologies are used?"
+    ];
+
+    // ── Renders the suggested-question buttons as a new block
+    //    at the bottom of the chat, so they reappear after every
+    //    bot reply and the conversation can keep going.
+    function showSuggestions() {
+      const wrap = document.createElement("div");
+      wrap.id = "suggestions";
+      SUGGESTED_QUESTIONS.forEach(q => {
+        const btn = document.createElement("button");
+        btn.className = "suggestion-btn";
+        btn.type = "button";
+        btn.innerText = q;
+        btn.onclick = () => chat(q);
+        wrap.appendChild(btn);
+      });
+      chatBody.appendChild(wrap);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      return wrap;
+    }
+
+    async function chat(overrideText) {
+      const text = (overrideText !== undefined ? overrideText : msgInput.value).trim();
+      if (!text) return;
+
+      // Remove any suggestion buttons currently on screen so old
+      // ones can't be double-clicked while a reply is in flight.
+      document.querySelectorAll("#suggestions").forEach(el => el.remove());
+
+      // ── 1. Display the user's message immediately ─────────
+      addMessage(text, "user");
+      msgInput.value = "";
+
+      // ── 2. Disable input + button, show typing animation ──
+      msgInput.disabled = true;
+      sendBtn.disabled  = true;
+      showTyping();
+
+      // ── 3. Send message to Flask /chat endpoint ───────────
+      try {
+        const response = await fetch(`${BACKEND_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+
+        // Remove the typing animation before adding the reply
+        hideTyping();
+
+        if (!response.ok) {
+          // Only happens for malformed requests now (e.g. empty
+          // message) — there's no external API to fail anymore.
+          addMessage(`⚠️ ${data.error || "Something went wrong. Please try again."}`, "bot");
+        } else {
+          // Display the predefined reply as a normal bot message
+          addMessage(data.reply, "bot");
+        }
+
+      } catch (err) {
+        // Network error — Flask is probably not running
+        hideTyping();
+        console.error("Chat error:", err);
+        addMessage(
+          "⚠️ Cannot reach the server. Make sure Flask is running on http://localhost:5000",
+          "bot"
+        );
+      }
+
+      // ── 4. Re-enable input and show suggestions again ──────
+      msgInput.disabled = false;
+      sendBtn.disabled  = false;
+      msgInput.focus();
+      showSuggestions();
+    }
+
+    // ── Send on Enter keypress (same as original) ─────────────
+    msgInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") chat();
+    });
+
+    // ── Show suggested questions as soon as the chat opens ─────
+    showSuggestions();
+  </script>
+</body>
+</html>

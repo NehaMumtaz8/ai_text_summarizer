@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Summarizer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── ORIGINAL DESIGN — completely preserved ── */
+        :root {
+            --primary-violet: #e11d48;
+            --secondary-purple: #4c0519;
+            --accent-cyan: #fda4af;
+            --bg-deep: #0a0101;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-deep);
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        .nebula { position: absolute; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.25; animation: drift 20s infinite alternate ease-in-out; }
+        .nebula-1 { width: 450px; height: 450px; background: var(--secondary-purple); top: -5%; left: -5%; }
+        .nebula-2 { width: 350px; height: 350px; background: var(--primary-violet); bottom: -5%; right: -5%; animation-delay: -7s; }
+
+        @keyframes drift {
+            from { transform: translate(0, 0) scale(1); }
+            to   { transform: translate(60px, 40px) scale(1.1); }
+        }
+
+        .container { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; padding: 20px; }
+
+        .card {
+            width: 100%; max-width: 420px;
+            background: rgba(20, 5, 5, 0.7);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-radius: 40px; padding: 50px; text-align: center;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden;
+        }
+
+        .card::before {
+            content: ""; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, transparent, var(--primary-violet), transparent);
+            animation: rotateGlow 8s linear infinite; z-index: -1;
+        }
+
+        @keyframes rotateGlow { 100% { transform: rotate(360deg); } }
+
+        .card-inner { background: #0d0202; border-radius: 38px; padding: 48px; margin: -48px; }
+
+        h2 {
+            font-size: 34px; font-weight: 800;
+            background: linear-gradient(to right, #fff, var(--accent-cyan));
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 12px; letter-spacing: -1px;
+        }
+
+        .subtitle { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 30px; line-height: 1.6; }
+
+        .input-group { margin-bottom: 15px; }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%; padding: 16px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; color: white; font-size: 15px;
+            outline: none; transition: 0.4s;
+        }
+
+        input:focus {
+            background: rgba(225,29,72,0.1);
+            border-color: var(--primary-violet);
+            box-shadow: 0 0 20px rgba(225,29,72,0.2);
+        }
+
+        .check-row {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; color: rgba(255,255,255,0.6);
+            cursor: pointer; margin: 10px 0 25px; text-align: left;
+        }
+        .check-row input { width: auto; accent-color: var(--primary-violet); }
+
+        .btn-main {
+            width: 100%; padding: 16px; border: none; border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-violet), var(--secondary-purple));
+            color: white; font-size: 16px; font-weight: 700; cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 30px rgba(225,29,72,0.3);
+        }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(225,29,72,0.5); filter: brightness(1.1); }
+        .btn-main:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .msg-box {
+            display: none; padding: 12px 16px; border-radius: 12px;
+            font-size: 13px; font-weight: 500; margin-bottom: 16px;
+            text-align: left; line-height: 1.5;
+        }
+        .msg-box.error   { background: rgba(225,29,72,0.15); border: 1px solid rgba(225,29,72,0.4); color: #fda4af; }
+        .msg-box.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+
+        .link-box { margin-top: 25px; font-size: 14px; color: rgba(255,255,255,0.4); line-height: 1.8; }
+        .link-box a { color: var(--accent-cyan); text-decoration: none; font-weight: 600; }
+        .link-box a:hover { text-decoration: underline; }
+        .back-home { display: inline-block; margin-top: 15px; font-size: 13px; opacity: 0.6; color: white; text-decoration: none; transition: 0.3s; }
+        .back-home:hover { opacity: 1; }
+    </style>
+</head>
+
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-inner">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Continue your journey with AI Summarization &amp; Speech.</p>
+
+                <!-- Error / success messages -->
+                <div class="msg-box" id="msgBox"></div>
+
+                <!-- Email + Password form -->
+                <form id="loginForm">
+                    <div class="input-group">
+                        <input type="email" id="loginEmail" placeholder="Email Address" required autocomplete="email">
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+                    </div>
+
+                    <label class="check-row">
+                        <input type="checkbox" onchange="togglePassword()"> Show Password
+                    </label>
+
+                    <button type="submit" class="btn-main" id="loginBtn">Login to Dashboard</button>
+                </form>
+
+                <div class="link-box">
+                    New here? <a href="/signup">Create an Account</a><br>
+                    <a href="/" class="back-home">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/storage.js"></script>
+    <script>
+        // ── 3D Floating shard background ─────────────────────────────
+        const canvas = document.getElementById('bg-canvas');
+        const ctx    = canvas.getContext('2d');
+        let shards   = [];
+
+        function initCanvas() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+            shards = [];
+            for (let i = 0; i < 40; i++) {
+                shards.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 60 + 20,
+                    speedX: (Math.random() - 0.5) * 0.4,
+                    speedY: (Math.random() - 0.5) * 0.4,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.01,
+                    color: i % 2 === 0 ? "rgba(225,29,72,0.08)" : "rgba(76,5,25,0.12)"
+                });
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = "#0a0101";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            shards.forEach(s => {
+                s.x += s.speedX; s.y += s.speedY; s.rotation += s.rotationSpeed;
+                if (s.x < -s.size) s.x = canvas.width + s.size;
+                if (s.x > canvas.width + s.size) s.x = -s.size;
+                if (s.y < -s.size) s.y = canvas.height + s.size;
+                if (s.y > canvas.height + s.size) s.y = -s.size;
+                ctx.save();
+                ctx.translate(s.x, s.y);
+                ctx.rotate(s.rotation);
+                ctx.fillStyle   = s.color;
+                ctx.strokeStyle = "rgba(225,29,72,0.15)";
+                ctx.lineWidth   = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, -s.size);
+                ctx.lineTo(s.size, s.size);
+                ctx.lineTo(-s.size, s.size);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        animate();
+
+        // ── UI helpers ────────────────────────────────────────────────
+        function showMsg(type, text) {
+            const box = document.getElementById('msgBox');
+            box.className   = `msg-box ${type}`;
+            box.textContent = text;
+            box.style.display = "block";
+        }
+        function hideMsg() { document.getElementById('msgBox').style.display = "none"; }
+
+        function togglePassword() {
+            const p = document.getElementById("loginPassword");
+            p.type = p.type === "password" ? "text" : "password";
+        }
+
+        // ── Pre-fill email if returning user ─────────────────────────
+        window.addEventListener('DOMContentLoaded', () => {
+            const lastEmail = localStorage.getItem("lastEmail");
+            if (lastEmail) document.getElementById("loginEmail").value = lastEmail;
+        });
+
+        // ── Login form submission (Local Storage — no server call) ────
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            hideMsg();
+
+            const email    = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value;
+            const btn      = document.getElementById("loginBtn");
+
+            btn.disabled    = true;
+            btn.textContent = "Logging in…";
+
+            const result = loginUser({ email, password });
+
+            if (result.error) {
+                showMsg("error", result.error);
+            } else {
+                localStorage.setItem("lastEmail", email);
+                showMsg("success", "Login successful! Redirecting…");
+                setTimeout(() => location.href = "/welcome", 800);
+            }
+
+            btn.disabled    = false;
+            btn.textContent = "Login to Dashboard";
+        });
+    </script>
+</body>
+</html>

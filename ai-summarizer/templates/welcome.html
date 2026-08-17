@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - AI Summarizer</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       ALL ORIGINAL STYLES — completely unchanged
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --primary-violet: #e11d48; 
+      --secondary-purple: #4c0519;
+      --accent-cyan: #fda4af;
+      --bg-dark: #0a0101;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --border-glass: rgba(255, 255, 255, 0.2);
+      --text-color: #ffffff;
+      --input-bg: rgba(0, 0, 0, 0.4);
+    }
+
+    body.light-mode {
+      --bg-dark: #f3f4f6;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --border-glass: rgba(0, 0, 0, 0.1);
+      --text-color: #1f2937;
+      --input-bg: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+    body {
+      min-height: 100vh; background: var(--bg-dark);
+      color: var(--text-color); overflow-x: hidden;
+      transition: background 0.3s ease;
+    }
+
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+    .page { width: min(1250px, 95%); margin: 20px auto; position: relative; }
+
+    .nav-glass {
+      background: rgba(20,5,5,0.5); backdrop-filter: blur(15px);
+      border: 1px solid var(--border-glass); padding: 15px 30px;
+      border-radius: 20px; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 25px; gap: 12px;
+    }
+
+    .logo { font-weight: 800; font-size: 22px; }
+    .logo span { color: var(--primary-violet); }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+
+    .glass-card {
+      background: var(--card-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glass); border-radius: 28px; padding: 30px;
+    }
+
+    textarea {
+      width: 100%; height: 250px; background: var(--input-bg);
+      border: 1px solid var(--border-glass); border-radius: 18px;
+      padding: 20px; color: var(--text-color); font-size: 15px;
+      resize: none; outline: none; margin: 20px 0; transition: border-color 0.3s;
+    }
+    textarea:focus { border-color: var(--primary-violet); }
+
+    .btn {
+      padding: 12px 20px; border-radius: 12px; border: none;
+      font-weight: 600; cursor: pointer; transition: 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+
+    .btn-primary { background: var(--primary-violet); color: white; }
+    .btn-dictate { background: #e11d48; color: white; }
+    
+    @keyframes pulse-red {
+        0%   { box-shadow: 0 0 0 0   rgba(225,29,72,0.7); }
+        70%  { box-shadow: 0 0 0 15px rgba(225,29,72,0); }
+        100% { box-shadow: 0 0 0 0   rgba(225,29,72,0); }
+    }
+    .btn-dictate.active { background: #4c0519; border: 1px solid #e11d48; animation: pulse-red 1.5s infinite; }
+    .btn-stop { background: #4b5563; color: white; }
+
+    .control-group { margin-bottom: 20px; }
+    label { display: block; font-size: 12px; color: var(--accent-cyan); margin-bottom: 8px; font-weight: 600; }
+
+    select {
+      width: 100%; padding: 14px;
+      background: #1a0505 !important; border: 1px solid var(--primary-violet);
+      color: white !important; border-radius: 10px; outline: none; font-size: 14px;
+      display: block !important; visibility: visible !important;
+    }
+
+    .output-box {
+      margin-top: 20px; padding: 20px;
+      background: rgba(225,29,72,0.1); border-left: 4px solid var(--primary-violet);
+      border-radius: 10px;
+    }
+
+    .loading-wrapper { display: flex; align-items: center; gap: 12px; color: var(--accent-cyan); font-size: 14px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid rgba(225,29,72,0.25);
+      border-top-color: var(--primary-violet);
+      border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .qa-item {
+      background: rgba(255,255,255,0.05); padding: 15px;
+      border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border-glass);
+    }
+
+    .flashcard {
+      background: linear-gradient(135deg, var(--primary-violet), var(--secondary-purple));
+      padding: 20px; border-radius: 15px; margin-bottom: 15px;
+      color: white; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    @media (max-width: 950px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* ── PDF Upload styles (unchanged from original) ── */
+    #pdfFileInput { display: none; }
+
+    .pdf-drop-zone {
+      margin: 16px 0 0 0; border: 2px dashed rgba(225,29,72,0.45);
+      border-radius: 18px; padding: 28px 20px; text-align: center;
+      cursor: pointer; transition: border-color 0.3s, background 0.3s;
+      background: rgba(225,29,72,0.04); position: relative;
+    }
+    .pdf-drop-zone.drag-over { border-color: var(--primary-violet); background: rgba(225,29,72,0.12); }
+    .pdf-drop-zone .pdf-icon { font-size: 38px; display: block; margin-bottom: 10px; line-height: 1; }
+    .pdf-drop-zone .pdf-label { font-size: 14px; color: var(--accent-cyan); font-weight: 600; }
+    .pdf-drop-zone .pdf-sublabel { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 5px; }
+
+    .pdf-progress-track { display: none; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 14px; }
+
+    @keyframes pdf-progress-pulse {
+      0%   { width: 10%; } 50%  { width: 75%; }
+      90%  { width: 92%; } 100% { width: 92%; }
+    }
+    .pdf-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-violet), var(--accent-cyan)); border-radius: 999px; animation: pdf-progress-pulse 4s ease-out forwards; }
+
+    .pdf-status { display: none; margin-top: 12px; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 500; line-height: 1.5; }
+    .pdf-status.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7; }
+    .pdf-status.error   { background: rgba(225,29,72,0.12); border: 1px solid rgba(225,29,72,0.35); color: #fda4af; }
+
+    .pdf-info-pill { display: none; margin-top: 10px; padding: 8px 14px; background: rgba(225,29,72,0.15); border: 1px solid rgba(225,29,72,0.3); border-radius: 999px; font-size: 12px; color: var(--accent-cyan); font-weight: 600; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .pdf-upload-btn { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; padding: 9px 20px; background: linear-gradient(135deg, var(--primary-violet), var(--secondary-purple)); color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.2s; }
+    .pdf-upload-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .pdf-upload-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    /* ═══════════════════════════════════════════════════════════
+       NEW: USER PROFILE NAV ADDITIONS
+    ═══════════════════════════════════════════════════════════ */
+
+    /* User avatar + name in nav */
+    .nav-user {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 600; color: var(--accent-cyan);
+    }
+    .nav-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid var(--primary-violet);
+      object-fit: cover; background: var(--secondary-purple);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; color: white;
+      overflow: hidden;
+    }
+    .nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .btn-logout {
+      padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(225,29,72,0.4);
+      background: rgba(225,29,72,0.1); color: var(--accent-cyan);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s;
+    }
+    .btn-logout:hover { background: rgba(225,29,72,0.25); border-color: var(--primary-violet); }
+
+    /* ═══════════════════════════════════════════════════════════
+       NEW: HISTORY DASHBOARD PANEL
+    ═══════════════════════════════════════════════════════════ */
+
+    .history-panel {
+      margin-top: 25px;
+      /* spans full width below the main grid */
+    }
+
+    .history-tabs {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      padding: 9px 18px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.6);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.25s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: rgba(225,29,72,0.15);
+      border-color: var(--primary-violet);
+      color: white;
+    }
+
+    .history-section { display: none; }
+    .history-section.active { display: block; }
+
+    .history-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 15px;
+    }
+    .history-header h3 { font-size: 16px; font-weight: 700; color: var(--accent-cyan); }
+
+    .btn-clear-all {
+      padding: 7px 14px; border-radius: 9px;
+      border: 1px solid rgba(225,29,72,0.4);
+      background: rgba(225,29,72,0.1);
+      color: var(--accent-cyan); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: 0.25s;
+    }
+    .btn-clear-all:hover { background: rgba(225,29,72,0.25); }
+
+    /* History item card */
+    .hist-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 18px 20px;
+      margin-bottom: 12px; position: relative;
+      transition: border-color 0.2s;
+    }
+    .hist-item:hover { border-color: rgba(225,29,72,0.35); }
+
+    .hist-meta {
+      font-size: 11px; color: rgba(255,255,255,0.4);
+      margin-bottom: 8px; display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .hist-badge {
+      padding: 2px 8px; border-radius: 999px;
+      background: rgba(225,29,72,0.15);
+      border: 1px solid rgba(225,29,72,0.3);
+      color: var(--accent-cyan); font-size: 10px; font-weight: 700;
+    }
+
+    .hist-content {
+      font-size: 13px; color: rgba(255,255,255,0.75);
+      line-height: 1.6; max-height: 70px; overflow: hidden;
+      text-overflow: ellipsis; white-space: pre-wrap;
+    }
+
+    .hist-actions {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+
+    .btn-del {
+      padding: 5px 12px; border-radius: 8px;
+      border: 1px solid rgba(225,29,72,0.3);
+      background: transparent; color: #fda4af;
+      font-size: 12px; cursor: pointer; transition: 0.2s;
+    }
+    .btn-del:hover { background: rgba(225,29,72,0.2); }
+
+    .hist-empty {
+      text-align: center; padding: 40px 20px;
+      color: rgba(255,255,255,0.3); font-size: 14px;
+    }
+    .hist-empty span { font-size: 32px; display: block; margin-bottom: 10px; }
+
+    .hist-loading {
+      text-align: center; padding: 30px;
+      color: rgba(255,255,255,0.4); font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="page">
+
+    <!-- ── NAVBAR (enhanced with user profile + logout) ── -->
+    <nav class="nav-glass">
+      <div class="logo">AI <span>Summarizer</span></div>
+
+      <div class="nav-right">
+        <!-- User profile (shown after login check) -->
+        <div class="nav-user" id="navUser" style="display:none;">
+          <div class="nav-avatar" id="navAvatar">?</div>
+          <span id="navUserName">User</span>
+        </div>
+
+        <button class="btn" onclick="toggleMode()">🌗 Mode</button>
+        <button class="btn-logout" id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <!-- ── MAIN GRID (unchanged) ── -->
+    <div class="main-grid">
+      <div class="glass-card">
+        <h2>Welcome Back 👋</h2>
+
+        <textarea id="inputText" placeholder="I am listening… Start speaking your paragraph, or upload a PDF below."></textarea>
+
+        <div style="display:flex; gap:10px;">
+          <button id="dictateBtn" class="btn btn-dictate" onclick="toggleDictation()">🎤 Start Dictation</button>
+          <button id="generateBtn" class="btn btn-primary" onclick="generateSummary()" style="flex:1;">Generate Summary</button>
+        </div>
+
+        <!-- PDF Upload section (unchanged) -->
+        <div>
+          <input type="file" id="pdfFileInput" accept=".pdf" onchange="handleFileSelected(event)">
+          <div class="pdf-drop-zone" id="pdfDropZone"
+               onclick="document.getElementById('pdfFileInput').click()"
+               ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+            <span class="pdf-icon">📄</span>
+            <div class="pdf-label">Upload PDF</div>
+            <div class="pdf-sublabel">Drag &amp; drop a PDF here, or click to browse</div>
+            <div class="pdf-sublabel" style="margin-top:3px;">Max 50 MB · Text-based PDFs only</div>
+            <button class="pdf-upload-btn" id="pdfUploadBtn"
+                    onclick="event.stopPropagation(); document.getElementById('pdfFileInput').click();">
+              📂 Choose PDF
+            </button>
+          </div>
+          <div class="pdf-progress-track" id="pdfProgressTrack"><div class="pdf-progress-fill" id="pdfProgressFill"></div></div>
+          <div class="pdf-status" id="pdfStatus"></div>
+          <div class="pdf-info-pill" id="pdfInfoPill"><span id="pdfInfoText"></span></div>
+        </div>
+
+        <!-- Output boxes (unchanged) -->
+        <div class="output-box">
+          <label>Summary Result</label>
+          <div id="summaryResult">Your AI summary will appear here.</div>
+        </div>
+        <div id="quizSection" class="output-box" style="display:none; border-color:#e11d48;">
+          <label>Knowledge Check (5 Questions)</label>
+          <div id="quizContent"></div>
+        </div>
+        <div id="cardSection" class="output-box" style="display:none; border-color:#fda4af;">
+          <label>Study Cards (5 Cards)</label>
+          <div id="cardContent"></div>
+        </div>
+      </div>
+
+      <!-- ── SIDE PANEL (unchanged) ── -->
+      <div class="side-panel">
+        <div class="glass-card">
+          <div class="control-group">
+            <label>Accent</label>
+            <select id="langSelect">
+              <option value="en-US">English (US)</option>
+              <option value="en-GB">English (UK)</option>
+              <option value="en-IN">English (India)</option>
+              <option value="ta-IN">Tamil (India)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Voice Gender</label>
+            <select id="voiceGender">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Depth</label>
+            <select id="sumDepth">
+              <option value="concise">Concise</option>
+              <option value="detailed">Detailed</option>
+              <option value="bullets">Bullets</option>
+            </select>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+            <button class="btn btn-primary" onclick="speakOutput()">🔊 Listen</button>
+            <button class="btn btn-stop"    onclick="stopSpeech()">⏹ Stop</button>
+          </div>
+          <button class="btn" style="width:100%; background:#e11d48; color:white; margin-bottom:10px;" onclick="generateRealQuiz()">📝 Generate Quiz</button>
+          <button class="btn" style="width:100%; background:#4c0519; color:white;"                     onclick="generateRealCards()">🗂 Generate Cards</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         NEW: HISTORY DASHBOARD PANEL
+         Sits below the main grid, full width.
+    ═══════════════════════════════════════════════════════ -->
+    <div class="history-panel glass-card" id="historyPanel" style="display:none;">
+      
+      <!-- Tab buttons -->
+      <div class="history-tabs">
+        <button class="tab-btn active" onclick="switchTab('summaries')">📝 Summaries</button>
+        <button class="tab-btn"       onclick="switchTab('quizzes')">❓ Quizzes</button>
+        <button class="tab-btn"       onclick="switchTab('flashcards')">🗂 Flashcards</button>
+        <button class="tab-btn"       onclick="switchTab('pdfs')">📄 PDFs</button>
+      </div>
+
+      <!-- Summaries tab -->
+      <div class="history-section active" id="tab-summaries">
+        <div class="history-header">
+          <h3>Recent Summaries</h3>
+          <button class="btn-clear-all" onclick="clearAll()">🗑 Clear All History</button>
+        </div>
+        <div id="summaries-list"><div class="hist-loading">Loading…</div></div>
+      </div>
+
+      <!-- Quizzes tab -->
+      <div class="history-section" id="tab-quizzes">
+        <div class="history-header"><h3>Quiz History</h3></div>
+        <div id="quizzes-list"><div class="hist-loading">Loading…</div></div>
+      </div>
+
+      <!-- Flashcards tab -->
+      <div class="history-section" id="tab-flashcards">
+        <div class="history-header"><h3>Flashcard Sets</h3></div>
+        <div id="flashcards-list"><div class="hist-loading">Loading…</div></div>
+      </div>
+
+      <!-- PDFs tab -->
+      <div class="history-section" id="tab-pdfs">
+        <div class="history-header"><h3>Uploaded PDFs</h3></div>
+        <div id="pdfs-list"><div class="hist-loading">Loading…</div></div>
+      </div>
+    </div>
+
+  </div><!-- /.page -->
+
+  <script src="/static/js/storage.js"></script>
+  <script>
+    // ─────────────────────────────────────────────────────────
+    //  CONFIG
+    // ─────────────────────────────────────────────────────────
+    const BACKEND_URL = "";  // relative path — same-origin as whatever host served this page
+
+    // ─────────────────────────────────────────────────────────
+    //  BACKGROUND CANVAS  (unchanged)
+    // ─────────────────────────────────────────────────────────
+    const canvas = document.getElementById('bg-canvas');
+    const ctx    = canvas.getContext('2d');
+    let points   = [];
+    const maxDist = 180;
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initPoints(); }
+    function initPoints() {
+      points = [];
+      const count = Math.floor((canvas.width * canvas.height) / 35000);
+      for (let i = 0; i < count; i++) {
+        points.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4 });
+      }
+    }
+    function animate() {
+      ctx.fillStyle = document.body.classList.contains('light-mode') ? '#f3f4f6' : '#0a0101';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      points.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x<0||p.x>canvas.width) p.vx*=-1;
+        if (p.y<0||p.y>canvas.height) p.vy*=-1;
+        ctx.fillStyle='rgba(225,29,72,0.4)'; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill();
+      });
+      for (let i=0;i<points.length;i++) for (let j=i+1;j<points.length;j++) {
+        const dx=points[i].x-points[j].x, dy=points[i].y-points[j].y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist<maxDist) {
+          ctx.strokeStyle=`rgba(225,29,72,${(1-dist/maxDist)*0.4})`; ctx.lineWidth=0.8;
+          ctx.beginPath(); ctx.moveTo(points[i].x,points[i].y); ctx.lineTo(points[j].x,points[j].y); ctx.stroke();
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+    window.addEventListener('resize', resize);
+    resize(); animate();
+
+    // ─────────────────────────────────────────────────────────
+    //  DARK / LIGHT MODE  (unchanged)
+    // ─────────────────────────────────────────────────────────
+    function toggleMode() { document.body.classList.toggle('light-mode'); }
+
+    // ─────────────────────────────────────────────────────────
+    //  SPEECH RECOGNITION  (unchanged)
+    // ─────────────────────────────────────────────────────────
+    let recognition, isRecording = false, finalTranscript = '';
+
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = true; recognition.interimResults = true;
+      recognition.onresult = e => {
+        let interim = '';
+        for (let i=e.resultIndex;i<e.results.length;++i) {
+          if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript+' ';
+          else interim += e.results[i][0].transcript;
+        }
+        document.getElementById('inputText').value = finalTranscript + interim;
+      };
+      recognition.onerror = e => { if(e.error==='no-speech') return; toggleDictation(); };
+    }
+
+    function toggleDictation() {
+      const btn = document.getElementById('dictateBtn');
+      const ta  = document.getElementById('inputText');
+      if (!isRecording) {
+        if (!recognition) return alert("Speech recognition not supported.");
+        finalTranscript = ta.value.trim() ? ta.value+' ' : '';
+        recognition.lang = document.getElementById('langSelect').value;
+        recognition.start(); isRecording = true;
+        btn.innerHTML = "🛑 Stop Dictation"; btn.classList.add('active');
+      } else {
+        recognition.stop(); isRecording = false;
+        btn.innerHTML = "🎤 Start Dictation"; btn.classList.remove('active');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  SPEECH SYNTHESIS  (unchanged)
+    // ─────────────────────────────────────────────────────────
+    function speakOutput() {
+      window.speechSynthesis.cancel();
+      const text = document.getElementById('summaryResult').innerText;
+      if (text.includes("appear here")) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      const targetLang = document.getElementById('langSelect').value;
+      const targetGender = document.getElementById('voiceGender').value;
+      const voices = window.speechSynthesis.getVoices();
+      let voice = voices.find(v => {
+        const name = v.name.toLowerCase();
+        const langMatch = v.lang.includes(targetLang)||v.lang.startsWith(targetLang.split('-')[0]);
+        const genderMatch = targetGender==='male' ? (name.includes('male')||name.includes('david')) : (name.includes('female')||name.includes('zira')||name.includes('samantha'));
+        return langMatch && genderMatch;
+      });
+      if (voice) utterance.voice = voice; else utterance.lang = targetLang;
+      utterance.pitch = targetGender==='female'?1.1:0.9; utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+    function stopSpeech() { window.speechSynthesis.cancel(); }
+
+    // ─────────────────────────────────────────────────────────
+    //  AI SUMMARIZATION  (enhanced: auto-saves to history)
+    // ─────────────────────────────────────────────────────────
+    async function generateSummary() {
+      const input = document.getElementById('inputText').value.trim();
+      if (!input) return alert("Please provide some text.");
+      if (input.length < 50) return alert("At least 50 characters needed.");
+
+      const depth    = document.getElementById('sumDepth').value;
+      const resultDiv= document.getElementById('summaryResult');
+      const btn      = document.getElementById('generateBtn');
+
+      btn.disabled = true; btn.textContent = "Generating…";
+      resultDiv.innerHTML = `<div class="loading-wrapper"><div class="spinner"></div><span>BART is summarizing… this may take 10–30 seconds.</span></div>`;
+
+      try {
+        const res  = await fetch(`${BACKEND_URL}/summarize`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body: JSON.stringify({text:input, depth})
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||`Server error ${res.status}`);
+
+        const formatted = data.summary.replace(/\n/g,"<br>").replace(/• /g,"• ");
+        resultDiv.innerHTML = formatted;
+
+        // ── Auto-save summary to backend history ──────────────
+        autoSaveSummary(input, data.summary, depth);
+
+      } catch(err) {
+        const isNet = err instanceof TypeError;
+        resultDiv.innerHTML = isNet
+          ? `⚠️ <b>Cannot connect to Flask.</b><br>Run <code>python app.py</code> first.`
+          : `⚠️ <b>Error:</b> ${err.message}`;
+      }
+
+      btn.disabled = false; btn.textContent = "Generate Summary";
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  QUIZ  (enhanced: auto-saves)
+    // ─────────────────────────────────────────────────────────
+    function generateRealQuiz() {
+      const text = document.getElementById('inputText').value;
+      if (text.length < 30) return alert("Provide more content.");
+
+      const words = text.split(/\s+/).filter(w=>w.length>5);
+      document.getElementById('quizSection').style.display = "block";
+      const questions = [];
+      let html = "";
+      for (let i=0;i<5;i++) {
+        const kw = words[i%words.length]||"Topic";
+        questions.push(`How does the concept of "${kw}" relate to the overall theme?`);
+        html += `<div class="qa-item"><b>Q${i+1}:</b> How does the concept of "<b>${kw}</b>" relate to the overall theme?</div>`;
+      }
+      document.getElementById('quizContent').innerHTML = html;
+      document.getElementById('quizSection').scrollIntoView({behavior:'smooth'});
+
+      // Auto-save quiz
+      autoSaveQuiz(text, questions);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  FLASHCARDS  (enhanced: auto-saves)
+    // ─────────────────────────────────────────────────────────
+    function generateRealCards() {
+      const text = document.getElementById('inputText').value;
+      if (text.length < 30) return alert("Provide more content.");
+
+      const sentences = text.split(/[.!?]/).map(s=>s.trim()).filter(s=>s.length>12);
+      document.getElementById('cardSection').style.display = "block";
+      const cards = [];
+      let html = "";
+      for (let i=0;i<5;i++) {
+        const content = sentences[i%sentences.length];
+        cards.push(content);
+        html += `<div class="flashcard"><b>Key Insight ${i+1}</b><hr style="margin:8px 0;opacity:0.3;">${content}</div>`;
+      }
+      document.getElementById('cardContent').innerHTML = html;
+      document.getElementById('cardSection').scrollIntoView({behavior:'smooth'});
+
+      // Auto-save flashcards
+      autoSaveFlashcards(text, cards);
+    }
+
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+
+    // ═════════════════════════════════════════════════════════
+    //  PDF UPLOAD SYSTEM  (unchanged, enhanced with save)
+    // ═════════════════════════════════════════════════════════
+    const pdfDropZone      = document.getElementById('pdfDropZone');
+    const pdfUploadBtn     = document.getElementById('pdfUploadBtn');
+    const pdfProgressTrack = document.getElementById('pdfProgressTrack');
+    const pdfProgressFill  = document.getElementById('pdfProgressFill');
+    const pdfStatus        = document.getElementById('pdfStatus');
+    const pdfInfoPill      = document.getElementById('pdfInfoPill');
+    const pdfInfoText      = document.getElementById('pdfInfoText');
+
+    function onDragOver(e)  { e.preventDefault(); e.stopPropagation(); pdfDropZone.classList.add('drag-over'); }
+    function onDragLeave(e) { e.preventDefault(); pdfDropZone.classList.remove('drag-over'); }
+    function onDrop(e) {
+      e.preventDefault(); e.stopPropagation();
+      pdfDropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) uploadPDF(e.dataTransfer.files[0]);
+    }
+    function handleFileSelected(e) { if (e.target.files[0]) uploadPDF(e.target.files[0]); e.target.value=""; }
+
+    async function uploadPDF(file) {
+      if (!file.name.toLowerCase().endsWith('.pdf')) { showPdfStatus('error','⚠️ Only PDFs supported.'); return; }
+      if (file.size > 50*1024*1024) { showPdfStatus('error','⚠️ File too large (max 50 MB).'); return; }
+
+      setPdfLoading(true); hidePdfInfo(); showPdfStatus('','');
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res  = await fetch(`${BACKEND_URL}/upload-pdf`, {
+          method:'POST', body:formData, credentials:'include'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||`Server error ${res.status}`);
+
+        document.getElementById('inputText').value = data.text;
+        finalTranscript = data.text+" ";
+
+        showPdfStatus('success',`✅ Extracted from "${data.filename}" — ${data.page_count} page${data.page_count!==1?'s':''} · ready to summarize!`);
+        showPdfInfo(data.filename, data.word_count);
+
+        // Auto-save PDF record to history
+        autoSavePDF(data.filename, data.page_count, data.word_count);
+
+      } catch(err) {
+        const isNet = err instanceof TypeError;
+        showPdfStatus('error', isNet ? '⚠️ Cannot reach Flask server.' : `⚠️ ${err.message}`);
+      }
+      setPdfLoading(false);
+    }
+
+    function setPdfLoading(on) {
+      pdfUploadBtn.disabled    = on;
+      pdfUploadBtn.textContent = on ? "⏳ Extracting…" : "📂 Choose PDF";
+      if (on) {
+        pdfProgressTrack.style.display = "block";
+        pdfProgressFill.style.animation = "none";
+        void pdfProgressFill.offsetWidth;
+        pdfProgressFill.style.animation = "";
+      } else {
+        pdfProgressFill.style.animation = "none";
+        pdfProgressFill.style.width = "100%";
+        setTimeout(() => { pdfProgressTrack.style.display="none"; pdfProgressFill.style.width=""; }, 400);
+      }
+    }
+    function showPdfStatus(type, msg) {
+      if (!type && !msg) { pdfStatus.style.display="none"; return; }
+      pdfStatus.className = `pdf-status ${type}`; pdfStatus.innerHTML = msg; pdfStatus.style.display = "block";
+    }
+    function showPdfInfo(filename, wc) { pdfInfoText.textContent = `📄 ${filename}  ·  ${wc.toLocaleString()} words`; pdfInfoPill.style.display = "flex"; }
+    function hidePdfInfo() { pdfInfoPill.style.display = "none"; }
+
+    // ═════════════════════════════════════════════════════════
+    //  AUTH — check Local Storage on load, show profile / logout
+    // ═════════════════════════════════════════════════════════
+
+    let currentUser = null;
+
+    function checkAuth() {
+      try {
+        const user = getCurrentUser();
+        if (user) {
+          currentUser = user;
+          showUserInNav(user);
+          document.getElementById('historyPanel').style.display = "block";
+          loadAllHistory();
+        } else {
+          // Not logged in — redirect to login
+          location.href = "/login";
+        }
+      } catch(err) {
+        console.warn("Could not check auth:", err);
+        location.href = "/login";
+      }
+    }
+
+    function showUserInNav(user) {
+      const nameEl   = document.getElementById('navUserName');
+      const avatarEl = document.getElementById('navAvatar');
+      const logoutEl = document.getElementById('logoutBtn');
+      const navUser  = document.getElementById('navUser');
+
+      nameEl.textContent = user.name || user.email;
+
+      // Show avatar image if Google user has one, otherwise show initials
+      if (user.avatar) {
+        avatarEl.innerHTML = `<img src="${user.avatar}" alt="avatar">`;
+      } else {
+        const initials = (user.name || "U").split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        avatarEl.textContent = initials;
+      }
+
+      navUser.style.display  = "flex";
+      logoutEl.style.display = "block";
+
+      // Update welcome message
+      const heading = document.querySelector('.glass-card h2');
+      if (heading) heading.textContent = `Welcome Back, ${(user.name||"").split(' ')[0]} 👋`;
+    }
+
+    function logout() {
+      clearCurrentUser();
+      localStorage.removeItem("lastEmail");
+      location.href = "/login";
+    }
+
+    // ═════════════════════════════════════════════════════════
+    //  HISTORY — auto-save helpers (Local Storage, no server call)
+    // ═════════════════════════════════════════════════════════
+
+    function autoSaveSummary(originalText, summary, depth) {
+      if (!currentUser) return;
+      try {
+        saveSummary(currentUser.id, { original_text: originalText, summary, depth });
+        loadSummaries();
+      } catch(e) { console.warn("Could not save summary:", e); }
+    }
+
+    function autoSaveQuiz(sourceText, questions) {
+      if (!currentUser) return;
+      try {
+        saveQuiz(currentUser.id, { source_text: sourceText, questions });
+        loadQuizzes();
+      } catch(e) { console.warn("Could not save quiz:", e); }
+    }
+
+    function autoSaveFlashcards(sourceText, cards) {
+      if (!currentUser) return;
+      try {
+        saveFlashcards(currentUser.id, { source_text: sourceText, cards });
+        loadFlashcards();
+      } catch(e) { console.warn("Could not save flashcards:", e); }
+    }
+
+    function autoSavePDF(filename, pageCount, wordCount) {
+      if (!currentUser) return;
+      try {
+        savePdfRecord(currentUser.id, { filename, page_count: pageCount, word_count: wordCount });
+        loadPDFs();
+      } catch(e) { console.warn("Could not save PDF record:", e); }
+    }
+
+    // ═════════════════════════════════════════════════════════
+    //  NEW: HISTORY — load and render
+    // ═════════════════════════════════════════════════════════
+
+    function loadAllHistory() {
+      loadSummaries(); loadQuizzes(); loadFlashcards(); loadPDFs();
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function loadSummaries() {
+      const el = document.getElementById('summaries-list');
+      try {
+        const summaries = currentUser ? getSummaries(currentUser.id) : [];
+        if (!summaries || summaries.length === 0) {
+          el.innerHTML = `<div class="hist-empty"><span>📝</span>No summaries yet. Generate one above!</div>`;
+          return;
+        }
+        el.innerHTML = summaries.map(s => `
+          <div class="hist-item">
+            <div class="hist-meta">
+              <span class="hist-badge">${s.depth || 'concise'}</span>
+              <span>${fmtDate(s.created_at)}</span>
+            </div>
+            <div class="hist-content">${(s.summary||'').replace(/</g,'&lt;')}</div>
+            <div class="hist-actions">
+              <button class="btn-del" onclick="handleDeleteSummary('${s.id}')">🗑 Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        el.innerHTML = `<div class="hist-empty"><span>⚠️</span>Could not load summaries.</div>`;
+      }
+    }
+
+    // Named handleDeleteSummary (not deleteSummary) to avoid shadowing
+    // storage.js's deleteSummary(userId, id) function of the same name.
+    function handleDeleteSummary(id) {
+      if (!confirm("Delete this summary?")) return;
+      try {
+        deleteSummary(currentUser.id, id);
+        loadSummaries();
+      } catch(e) { alert("Delete failed."); }
+    }
+
+    function loadQuizzes() {
+      const el = document.getElementById('quizzes-list');
+      try {
+        const quizzes = currentUser ? getQuizzes(currentUser.id) : [];
+        if (!quizzes || quizzes.length === 0) {
+          el.innerHTML = `<div class="hist-empty"><span>❓</span>No quizzes yet. Generate one above!</div>`;
+          return;
+        }
+        el.innerHTML = quizzes.map(q => `
+          <div class="hist-item">
+            <div class="hist-meta">
+              <span class="hist-badge">${(q.questions||[]).length} questions</span>
+              <span>${fmtDate(q.created_at)}</span>
+            </div>
+            <div class="hist-content">${(q.questions||[]).slice(0,2).map((qq,i)=>`Q${i+1}: ${String(qq).replace(/</g,'&lt;')}`).join('<br>')}</div>
+            <div class="hist-actions">
+              <button class="btn-del" onclick="handleDeleteQuiz('${q.id}')">🗑 Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        el.innerHTML = `<div class="hist-empty"><span>⚠️</span>Could not load quizzes.</div>`;
+      }
+    }
+
+    // Named handleDeleteQuiz (not deleteQuiz) to avoid shadowing
+    // storage.js's deleteQuiz(userId, id) function of the same name.
+    function handleDeleteQuiz(id) {
+      if (!confirm("Delete this quiz?")) return;
+      try {
+        deleteQuiz(currentUser.id, id);
+        loadQuizzes();
+      } catch(e) { alert("Delete failed."); }
+    }
+
+    function loadFlashcards() {
+      const el = document.getElementById('flashcards-list');
+      try {
+        const flashcards = currentUser ? getFlashcards(currentUser.id) : [];
+        if (!flashcards || flashcards.length === 0) {
+          el.innerHTML = `<div class="hist-empty"><span>🗂</span>No flashcard sets yet. Generate some above!</div>`;
+          return;
+        }
+        el.innerHTML = flashcards.map(f => `
+          <div class="hist-item">
+            <div class="hist-meta">
+              <span class="hist-badge">${(f.cards||[]).length} cards</span>
+              <span>${fmtDate(f.created_at)}</span>
+            </div>
+            <div class="hist-content">${(f.cards||[]).slice(0,2).map((c,i)=>`Card ${i+1}: ${String(c).replace(/</g,'&lt;')}`).join('<br>')}</div>
+            <div class="hist-actions">
+              <button class="btn-del" onclick="handleDeleteFlashcard('${f.id}')">🗑 Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        el.innerHTML = `<div class="hist-empty"><span>⚠️</span>Could not load flashcards.</div>`;
+      }
+    }
+
+    // Named handleDeleteFlashcard (not deleteFlashcard) to avoid shadowing
+    // storage.js's deleteFlashcard(userId, id) function of the same name.
+    function handleDeleteFlashcard(id) {
+      if (!confirm("Delete this flashcard set?")) return;
+      try {
+        deleteFlashcard(currentUser.id, id);
+        loadFlashcards();
+      } catch(e) { alert("Delete failed."); }
+    }
+
+    function loadPDFs() {
+      const el = document.getElementById('pdfs-list');
+      try {
+        const pdfs = currentUser ? getPdfRecords(currentUser.id) : [];
+        if (!pdfs || pdfs.length === 0) {
+          el.innerHTML = `<div class="hist-empty"><span>📄</span>No PDFs uploaded yet.</div>`;
+          return;
+        }
+        el.innerHTML = pdfs.map(p => `
+          <div class="hist-item">
+            <div class="hist-meta">
+              <span class="hist-badge">${p.page_count} pages</span>
+              <span>${p.word_count?.toLocaleString()} words</span>
+              <span>${fmtDate(p.created_at)}</span>
+            </div>
+            <div class="hist-content">📄 ${(p.filename||'').replace(/</g,'&lt;')}</div>
+            <div class="hist-actions">
+              <button class="btn-del" onclick="handleDeletePDF('${p.id}')">🗑 Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        el.innerHTML = `<div class="hist-empty"><span>⚠️</span>Could not load PDFs.</div>`;
+      }
+    }
+
+    // Named handleDeletePDF (not deletePDF) to avoid shadowing
+    // storage.js's deletePdfRecord(userId, id) function.
+    function handleDeletePDF(id) {
+      if (!confirm("Delete this PDF record?")) return;
+      try {
+        deletePdfRecord(currentUser.id, id);
+        loadPDFs();
+      } catch(e) { alert("Delete failed."); }
+    }
+
+    function clearAll() {
+      if (!confirm("Delete ALL history? This cannot be undone.")) return;
+      try {
+        clearAllHistory(currentUser.id);
+        loadAllHistory();
+      } catch(e) { alert("Clear failed."); }
+    }
+
+    // ── Tab switching ─────────────────────────────────────────
+    function switchTab(name) {
+      // Deactivate all tabs and sections
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.history-section').forEach(s => s.classList.remove('active'));
+
+      // Activate selected
+      event.target.classList.add('active');
+      document.getElementById(`tab-${name}`).classList.add('active');
+    }
+
+    // ── Run auth check on page load ───────────────────────────
+    window.addEventListener('DOMContentLoaded', checkAuth);
+  </script>
+</body>
+</html>
